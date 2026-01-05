@@ -1,76 +1,26 @@
 import './App.css'
-import AddItemForm from './components/AddItemForm'
-import FridgeList from './components/FridgeList'
-import Header from './components/Header'
-import { useEffect, useState } from 'react'
-import type { FridgeItem } from './types/fridge'
-import axios from 'axios'
+import AddItemForm from './components/organisms/AddItemForm'
+import FridgeList from './components/organisms/FridgeList'
+import Header from './components/organisms/Header'
+import { useFridgeItems } from './hooks/useFridgeItems'
 
 function App() {
-
-  const [items, setItems] = useState<FridgeItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<FridgeItem | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchItems() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await axios.get<FridgeItem[]>('https://thefridge-api.karapincha.io/fridge');
-        if (!cancelled) setItems(res.data || []);
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message ?? 'Failed to load items');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetchItems();
-    return () => { cancelled = true };
-  }, []);
-
-  async function handleDelete(itemToDelete: FridgeItem) {
-    setError(null);
-    try {
-      if (!itemToDelete._id) throw new Error('Item id missing');
-      await axios.delete(`https://thefridge-api.karapincha.io/fridge/${encodeURIComponent(itemToDelete._id)}`);
-      setItems((prev) => 
-        prev.filter((i) => 
-          i._id !== itemToDelete._id
-      ));
-    } catch (err: any) {
-      setError(err?.message ?? 'Failed to delete item');
-    }
-  }
-
-  function handleAdd(newItem: FridgeItem) {
-    setItems((prev) => [newItem, ...prev]);
-  }
-
-  function handleEdit(item: FridgeItem) {
-    setEditingItem(item);
-  }
-
-  function handleUpdate(updated: FridgeItem) {
-    setItems((prev) => 
-      prev.map((item) => 
-        (item._id === updated._id) 
-          ? updated 
-          : item
-        )
-    );
-    setEditingItem(null);
-  }
-
-  function handleCancelEdit() {
-    setEditingItem(null);
-  }
+  const {
+    items,
+    loading,
+    error,
+    editingItem,
+    handleDelete,
+    handleAdd,
+    handleEdit,
+    handleUpdate,
+    handleCancelEdit,
+  } = useFridgeItems();
 
   return (
-    <div className="min-h-screen py-10">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen relative">
+      <div className="absolute inset-0 top-[280px] bg-blue-50 -z-10"></div>
+      <div className="max-w-5xl mx-auto px-4 py-10">
         <Header />
         <AddItemForm onAdd={handleAdd} editingItem={editingItem ?? undefined} onUpdate={handleUpdate} onCancel={handleCancelEdit} />
         <FridgeList items={items} loading={loading} error={error} onDelete={handleDelete} onEdit={handleEdit} />
